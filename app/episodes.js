@@ -4,6 +4,10 @@ var db = mongo.db(process.env.MONGODB_URL);
 
 db.bind('episodes');
 
+var Podcasts = require('./podcasts'),
+    podcasts = new Podcasts();
+
+
 /**
  * @class Episodes
  */
@@ -11,12 +15,13 @@ db.bind('episodes');
 module.exports = function() {
     this.default = {
         _id: '',
-        name: '',
-        description: ''
+        title: '',
+        description: '',
+        filename: ''
     };
     /**
      *
-     * @param params
+     * @param podcastId
      * @returns {Promise}
      */
     this.getAll = function(podcastId) {
@@ -51,26 +56,49 @@ module.exports = function() {
             });
         });
     };
+
+    /**
+     * @param podcastId
+     * @param id
+     * @returns {Promise}
+     */
+    this.getSingleFromPodcast = function(podcastId, id) {
+        var params = { podcast_id: podcastId, _id: mongo.helper.toObjectID(id) };
+        return new Promise(function(resolve, reject) {
+            db.episodes.findOne(params, function(err, item) {
+                if(!item) {
+                    reject({ code: 404, message: 'Could not find episode'});
+                } else if (err) {
+                    reject(err);
+                } else {
+                    resolve(item);
+                }
+
+            });
+        });
+    };
     /**
      *
      * @param document
      * @returns {Promise}
      */
     this.create = function(document) {
+        var self = this;
         if(!this.validate(document)) {
+            console.log(document);
             throw 'Invalid document provided';
         }
         return new Promise(function(resolve, reject) {
-            db.episodes.insert(document, function(err, obj) {
-                if(err) {
-                    if(err.code = 11000) {
-                        reject({ code: 409, err: err, message: 'Duplicate ID' })
+            podcasts.getSingle(document.podcast_id).then(function(obj) {
+                db.episodes.insert(document, function(err, obj) {
+                    if(err) {
+                        reject(err);
+                    } else {
+                        resolve(obj);
                     }
-                    reject(err);
-                } else {
-                    resolve(obj);
-                }
-                
+                });
+            }, function(err) {
+                reject({ err: err })
             });
         });
     };
@@ -82,13 +110,14 @@ module.exports = function() {
      * @returns {Promise}
      */
     this.update = function(id, document, $set) {
-        var self = this;
-        $set = ($set === undefined ? false : $set);
         if(!this.validate(document) && !$set) {
             throw 'Invalid document provided';
         }
+        var self = this;
+        var params = { podcast_id: document.podcast_id, _id: mongo.helper.toObjectID(id) };
+        $set = ($set === undefined ? false : $set);
         return new Promise(function(resolve, reject) {
-            db.episodes.updateById(id, document, function(err, success, result) {
+            db.episodes.update(params, document, function(err, success, result) {
                 if(err) {
                     reject({ err: err });
                 } else if(success) {
@@ -106,28 +135,28 @@ module.exports = function() {
     };
     /**
      *
+     * @param podcastId
      * @param id
      * @returns {Promise}
      */
-    this.remove = function(id) {
+    this.remove = function(podcastId, id) {
+        var params = { podcast_id: podcastId, _id: mongo.helper.toObjectID(id) };
+        console.log(params);
         return new Promise(function(resolve, reject) {
-            db.episodes.removeById(id, function(err, success, result) {
+            db.episodes.remove(params, function(err, success, result) {
                 if(err) {
                     reject(err);
                 } else if(success) {
-                    resolve(result);
+                    resolve({status: 'deleted'});
                 } else {
                     reject({ code: 404, message: 'No document found to delete' });
                 }
-                
+
             });
         });
     };
     this.validate = function(document) {
-        if(!document._id && document.slug) {
-            document._id = document.slug;
-        }
-        if(document.name && document._id) {
+        if(document.title && document.podcast_id && document.file) {
             return true;
         }
         return false;

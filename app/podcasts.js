@@ -3,6 +3,7 @@ var mongo = require('mongoskin');
 var db = mongo.db(process.env.MONGODB_URL);
 
 db.bind('podcasts');
+db.bind('episodes');
 
 /**
  * @class Podcasts
@@ -24,7 +25,7 @@ module.exports = function() {
         return new Promise(function(resolve, reject) {
             db.podcasts.find(params).toArray(function(err, items) {
                 if(err) {
-                    reject({ code: 500, err: err, message: 'Could not find documents'});
+                    reject({ code: 500, err: err, message: 'Could not find podcasts'});
                 } else {
                     resolve(items);
                 }
@@ -41,7 +42,7 @@ module.exports = function() {
         return new Promise(function(resolve, reject) {
             db.podcasts.findById(id, function(err, item) {
                 if(!item) {
-                    reject({ code: 404, message: 'Could not find document'});
+                    reject({ code: 404, message: 'Could not find podcast'});
                 } else if (err) {
                     reject(err);
                 } else {
@@ -115,7 +116,7 @@ module.exports = function() {
                 if(err) {
                     reject(err);
                 } else if(success) {
-                    resolve(result);
+                    resolve({ status: 'deleted' });
                 } else {
                     reject({ code: 404, message: 'No document found to delete' });
                 }
