@@ -1,0 +1,26 @@
+{
+  "name": "podcaster-api",
+  "description": "An API for a podcasting application",
+  "repository": "https://github.com/mattmontgomery/podcaster-api",
+  "authors": [
+    {
+      "name": "Matthew Montgomery"
+    }
+  ],
+  "dependencies": {
+    "restify": "^2.8.3",
+    "dotenv": "^0.4.0",
+    "mongodb": "^1.4.22",
+    "mongoskin": "^1.4.4",
+    "promise": "^6.0.1"
+  },
+  "devDependencies": {
+    "gulp-develop-server": "^0.2.5",
+    "gulp": "^3.8.10",
+    "gulp-livereload": "^2.1.1",
+    "gulp-shell": "^0.2.10"
+  },
+  "scripts": {
+    "start": "node app/app.js"
+  }
+}
